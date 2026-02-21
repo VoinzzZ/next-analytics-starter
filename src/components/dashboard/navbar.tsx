@@ -25,7 +25,7 @@ type NavbarProps = {
 
 export function Navbar({ userName, userAvatarUrl }: NavbarProps) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -36,13 +36,14 @@ export function Navbar({ userName, userAvatarUrl }: NavbarProps) {
   };
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   return (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm" onClick={toggleTheme}>
-        {theme === "dark" ? "Light" : "Dark"}
+        <span className="hidden dark:inline">Light</span>
+        <span className="inline dark:hidden">Dark</span>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
