@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const protectedPrefixes = ["/dashboard", "/analytics", "/settings", "/admin"];
-const publicRoutes = ["/", "/login", "/register"];
+const publicRoutes = new Set(["/", "/login", "/register", "/auth/callback"]);
 
 const isProtectedRoute = (pathname: string) =>
   protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
+const isPublicRoute = (pathname: string) => publicRoutes.has(pathname);
 
 export const middleware = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
@@ -17,19 +18,22 @@ export const middleware = async (request: NextRequest) => {
     response,
   );
 
+  if (isPublicRoute(pathname)) {
+    if (user && (pathname === "/login" || pathname === "/register")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/dashboard";
+      const redirect = NextResponse.redirect(redirectUrl);
+      refreshedResponse.cookies.getAll().forEach(({ name, value }) => {
+        redirect.cookies.set(name, value);
+      });
+      return redirect;
+    }
+    return refreshedResponse;
+  }
+
   if (!user && isProtectedRoute(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    const redirect = NextResponse.redirect(redirectUrl);
-    refreshedResponse.cookies.getAll().forEach(({ name, value }) => {
-      redirect.cookies.set(name, value);
-    });
-    return redirect;
-  }
-
-  if (user && (pathname === "/login" || pathname === "/register")) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
     const redirect = NextResponse.redirect(redirectUrl);
     refreshedResponse.cookies.getAll().forEach(({ name, value }) => {
       redirect.cookies.set(name, value);

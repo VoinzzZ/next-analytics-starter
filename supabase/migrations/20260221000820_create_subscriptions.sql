@@ -25,6 +25,23 @@ create policy "subscriptions_read_own"
   for select
   using (auth.uid() = user_id);
 
+create policy "subscriptions_insert_own"
+  on public.subscriptions
+  for insert
+  with check (auth.uid() = user_id);
+
+create policy "subscriptions_update_own"
+  on public.subscriptions
+  for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "subscriptions_admin_all"
+  on public.subscriptions
+  for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
 create or replace function public.handle_subscriptions_updated_at()
 returns trigger
 language plpgsql

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { LogOut, Settings, User } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,13 +40,16 @@ export function Navbar({ userName, userAvatarUrl }: NavbarProps) {
   };
 
   return (
-    <div className="flex items-center gap-3">
-      <Button variant="outline" size="sm" onClick={toggleTheme}>
-        {theme === "dark" ? "Light mode" : "Dark mode"}
+    <div className="flex items-center gap-2">
+      <Button variant="ghost" size="sm" onClick={toggleTheme}>
+        {theme === "dark" ? "Light" : "Dark"}
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1 hover:border-zinc-200 dark:hover:border-zinc-800"
+          >
             <Avatar>
               {userAvatarUrl ? (
                 <AvatarImage src={userAvatarUrl} alt={userName} />
@@ -59,18 +63,42 @@ export function Navbar({ userName, userAvatarUrl }: NavbarProps) {
             </span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuLabel>{userName}</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel>
+            <div className="flex items-center gap-3">
+              <Avatar className="size-9">
+                {userAvatarUrl ? (
+                  <AvatarImage src={userAvatarUrl} alt={userName} />
+                ) : null}
+                <AvatarFallback>
+                  {userName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">{userName}</span>
+                <span className="text-xs text-zinc-500">Signed in</span>
+              </div>
+            </div>
+          </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/profile">Profile</Link>
+            <Link href="/profile" className="flex items-center gap-2">
+              <User className="size-4" />
+              Profile
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings">Settings</Link>
+            <Link href="/settings" className="flex items-center gap-2">
+              <Settings className="size-4" />
+              Settings
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={handleLogout} disabled={isLoggingOut}>
-            Logout
+            <div className="flex items-center gap-2">
+              <LogOut className="size-4" />
+              Logout
+            </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

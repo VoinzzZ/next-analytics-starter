@@ -28,23 +28,13 @@ export default async function DashboardLayout({
     user.user_metadata?.name ||
     user.email ||
     "User";
-  const userEmail = user.email || "";
   const userAvatarUrl = user.user_metadata?.avatar_url || null;
-
-  async function signOut() {
-    "use server";
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect("/login");
-  }
 
   return (
     <DashboardShell
       isAdmin={isAdmin}
       userName={userName}
-      userEmail={userEmail}
       userAvatarUrl={userAvatarUrl}
-      logoutAction={signOut}
     >
       {children}
     </DashboardShell>
