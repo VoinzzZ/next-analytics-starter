@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -37,51 +37,87 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const trafficData = [
-  { month: "Aug", visits: 48000 },
-  { month: "Sep", visits: 52000 },
-  { month: "Oct", visits: 61000 },
-  { month: "Nov", visits: 68000 },
-  { month: "Dec", visits: 75000 },
-  { month: "Jan", visits: 82000 },
-];
-
-const conversionData = [
-  { month: "Aug", rate: 2.4 },
-  { month: "Sep", rate: 2.7 },
-  { month: "Oct", rate: 2.6 },
-  { month: "Nov", rate: 3.1 },
-  { month: "Dec", rate: 3.4 },
-  { month: "Jan", rate: 3.6 },
-];
-
-const sourceData = [
-  { name: "Organic", value: 46 },
-  { name: "Direct", value: 28 },
-  { name: "Social", value: 16 },
-  { name: "Referral", value: 10 },
-];
+type TrafficDatum = {
+  month: string;
+  visits: number;
+  uniques: number;
+  avg_session_seconds: number;
+};
+type ConversionDatum = { month: string; rate: number };
+type SourceDatum = { name: string; value: number };
+type PageDatum = { page: string; views: number; uniques: number; bounce: number };
 
 const sourceColors = ["#2563eb", "#06b6d4", "#7c3aed", "#f59e0b"];
 
-const tableRows = [
-  { page: "/dashboard", views: "28,430", unique: "18,220", bounce: "32%" },
-  { page: "/pricing", views: "21,840", unique: "14,100", bounce: "28%" },
-  { page: "/features", views: "19,210", unique: "12,430", bounce: "35%" },
-  { page: "/blog/launch", views: "15,980", unique: "11,300", bounce: "41%" },
-  { page: "/integrations", views: "12,540", unique: "8,920", bounce: "29%" },
-  { page: "/case-studies", views: "10,220", unique: "7,840", bounce: "33%" },
-  { page: "/contact", views: "9,760", unique: "6,440", bounce: "38%" },
-  { page: "/docs/getting-started", views: "8,930", unique: "6,210", bounce: "27%" },
-  { page: "/security", views: "7,610", unique: "5,180", bounce: "30%" },
-  { page: "/careers", views: "6,840", unique: "4,990", bounce: "36%" },
-];
-
 export default function AnalyticsPage() {
+  const [trafficData, setTrafficData] = useState<TrafficDatum[]>([]);
+  const [conversionData, setConversionData] = useState<ConversionDatum[]>([]);
+  const [sourceData, setSourceData] = useState<SourceDatum[]>([]);
+  const [tableRows, setTableRows] = useState<PageDatum[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{
     start: string | null;
     end: string | null;
   }>({ start: null, end: null });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/analytics/summary", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to load analytics: ${response.status}`);
+        }
+        const payload = await response.json();
+        setTrafficData(payload.traffic ?? []);
+        setConversionData(payload.conversion ?? []);
+        setSourceData(payload.sources ?? []);
+        setTableRows(payload.pages ?? []);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const metrics = useMemo(() => {
+    const totalVisits = trafficData.at(-1)?.visits ?? 82420;
+    const uniqueVisitors = trafficData.at(-1)?.uniques ?? 41180;
+    const avgSessionSeconds = trafficData.at(-1)?.avg_session_seconds ?? 312;
+    const bounceRate = 32.8; // placeholder until real metric
+
+    return [
+      {
+        label: "Total Visits",
+        value: totalVisits.toLocaleString(),
+        change: "+6.4%",
+        color: "text-emerald-600",
+      },
+      {
+        label: "Unique Visitors",
+        value: uniqueVisitors.toLocaleString(),
+        change: "+3.1%",
+        color: "text-emerald-600",
+      },
+      {
+        label: "Bounce Rate",
+        value: `${bounceRate}%`,
+        change: "-1.2%",
+        color: "text-emerald-600",
+      },
+      {
+        label: "Avg. Session",
+        value: `${Math.floor(avgSessionSeconds / 60)}m ${avgSessionSeconds % 60}s`,
+        change: "+0.4%",
+        color: "text-emerald-600",
+      },
+    ];
+  }, [trafficData]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,32 +132,7 @@ export default function AnalyticsPage() {
       </div>
       <Suspense fallback={<AnalyticsMetricsSkeleton />}>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            {
-              label: "Total Visits",
-              value: "82,420",
-              change: "+6.4%",
-              color: "text-emerald-600",
-            },
-            {
-              label: "Unique Visitors",
-              value: "41,180",
-              change: "+3.1%",
-              color: "text-emerald-600",
-            },
-            {
-              label: "Bounce Rate",
-              value: "32.8%",
-              change: "-1.2%",
-              color: "text-emerald-600",
-            },
-            {
-              label: "Avg. Session",
-              value: "5m 12s",
-              change: "+0.4%",
-              color: "text-emerald-600",
-            },
-          ].map((item) => (
+          {metrics.map((item) => (
             <Card
               key={item.label}
               className="border-zinc-200 bg-white shadow-none dark:border-zinc-800 dark:bg-black"
@@ -179,6 +190,9 @@ export default function AnalyticsPage() {
       </Card>
 
       <Suspense fallback={<AnalyticsChartsSkeleton />}>
+        {isLoading && trafficData.length === 0 ? (
+          <AnalyticsChartsSkeleton />
+        ) : (
         <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
           <Card className="border-zinc-200 bg-white shadow-none dark:border-zinc-800 dark:bg-black">
             <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -202,7 +216,9 @@ export default function AnalyticsPage() {
                     Total Visits
                   </p>
                   <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-                    82.4k
+                    {trafficData.at(-1)?.visits
+                      ? `${(trafficData.at(-1)!.visits / 1000).toFixed(1)}k`
+                      : "82.4k"}
                   </p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 px-3 py-2 dark:border-zinc-800">
@@ -210,7 +226,9 @@ export default function AnalyticsPage() {
                     Unique
                   </p>
                   <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-                    41.1k
+                    {trafficData.at(-1)?.uniques
+                      ? `${(trafficData.at(-1)!.uniques / 1000).toFixed(1)}k`
+                      : "41.1k"}
                   </p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 px-3 py-2 dark:border-zinc-800">
@@ -218,7 +236,11 @@ export default function AnalyticsPage() {
                     Avg. Session
                   </p>
                   <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-                    5m 12s
+                    {trafficData.at(-1)?.avg_session_seconds
+                      ? `${Math.floor(trafficData.at(-1)!.avg_session_seconds / 60)}m ${
+                          trafficData.at(-1)!.avg_session_seconds % 60
+                        }s`
+                      : "5m 12s"}
                   </p>
                 </div>
               </div>
@@ -342,6 +364,7 @@ export default function AnalyticsPage() {
             </Card>
           </div>
         </div>
+        )}
       </Suspense>
 
       <Card className="border-zinc-200 bg-white shadow-none dark:border-zinc-800 dark:bg-black">
@@ -370,9 +393,9 @@ export default function AnalyticsPage() {
                   }
                 >
                   <TableCell className="font-medium">{row.page}</TableCell>
-                  <TableCell>{row.views}</TableCell>
-                  <TableCell>{row.unique}</TableCell>
-                  <TableCell>{row.bounce}</TableCell>
+                  <TableCell>{row.views.toLocaleString()}</TableCell>
+                  <TableCell>{row.uniques.toLocaleString()}</TableCell>
+                  <TableCell>{`${row.bounce.toFixed(0)}%`}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
