@@ -81,7 +81,7 @@ export default function Home() {
                 Get Started
               </Link>
               <a
-                href="https://github.com/your-org/next-analytics-starter"
+                href="https://github.com/VoinzzZ/next-analytics-starter"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-6 py-3 text-sm font-semibold transition-colors hover:bg-white dark:border-zinc-800 dark:hover:bg-zinc-900"
@@ -272,7 +272,7 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-zinc-500 sm:flex-row">
           <p>© 2026 Analytics Starter. All rights reserved.</p>
           <a
-            href="https://github.com/your-org/next-analytics-starter"
+            href="https://github.com/VoinzzZ/next-analytics-starter"
             target="_blank"
             rel="noreferrer"
             className="font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
