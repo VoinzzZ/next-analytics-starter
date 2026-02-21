@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { ChartTooltip } from "@/components/charts/tooltip";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { jsonFetcher } from "@/lib/fetcher";
 
 type TrafficDatum = {
   month: string;
@@ -46,6 +48,12 @@ type TrafficDatum = {
 type ConversionDatum = { month: string; rate: number };
 type SourceDatum = { name: string; value: number };
 type PageDatum = { page: string; views: number; uniques: number; bounce: number };
+type AnalyticsSummary = {
+  traffic: TrafficDatum[];
+  conversion: ConversionDatum[];
+  sources: SourceDatum[];
+  pages: PageDatum[];
+};
 
 const sourceColors = ["#2563eb", "#06b6d4", "#7c3aed", "#f59e0b"];
 
@@ -55,6 +63,7 @@ export default function AnalyticsPage() {
   const [sourceData, setSourceData] = useState<SourceDatum[]>([]);
   const [tableRows, setTableRows] = useState<PageDatum[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{
     start: string | null;
     end: string | null;
@@ -63,20 +72,17 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
-        const response = await fetch("/api/analytics/summary", {
-          cache: "no-store",
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to load analytics: ${response.status}`);
-        }
-        const payload = await response.json();
+        const payload = await jsonFetcher<AnalyticsSummary>("/api/analytics/summary");
         setTrafficData(payload.traffic ?? []);
         setConversionData(payload.conversion ?? []);
         setSourceData(payload.sources ?? []);
         setTableRows(payload.pages ?? []);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load analytics";
+        setError(message);
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -130,6 +136,12 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-semibold">Analytics</h1>
         </div>
       </div>
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Failed to load analytics</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
       <Suspense fallback={<AnalyticsMetricsSkeleton />}>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((item) => (
